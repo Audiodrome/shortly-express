@@ -1,7 +1,9 @@
 var express = require('express');
+var session = require('express-session');
 var util = require('./lib/utility');
 var partials = require('express-partials');
 var bodyParser = require('body-parser');
+var bcrypt = require('bcrypt-nodejs');
 
 
 var db = require('./app/config');
@@ -31,16 +33,6 @@ function(req, res) {
 app.get('/create', 
 function(req, res) {
   res.render('index');
-});
-
-app.get('/login',
-function(req, res) {
-  res.render('login');
-});
-
-app.get('/signup',
-function(req, res) {
-  res.render('signup');
 });
 
 app.get('/links', 
@@ -85,6 +77,65 @@ function(req, res) {
 /************************************************************/
 // Write your authentication routes here
 /************************************************************/
+
+app.get('/login',
+function(req, res) {
+  res.render('login');
+});
+
+app.get('/logout',
+function(req, res) {
+  //todo
+  req.session.destroy(function() {
+    res.redirect('/');
+  });
+});
+
+app.get('/signup',
+function(req, res) {
+  res.render('signup');
+});
+
+app.post('/login', 
+function(req, res) {
+  var username = req.body.username;
+  var password = req.body.password;
+
+  console.log('username entered: ', username);
+  console.log('password entered: ', password);
+
+  // check if user exists
+    // check password is valid to that user
+      // if not valid user to password redirect to restricted
+      // else redirect back to index
+
+  // query(users.name === username && users.pass === password)
+  var salt = bcrypt.genSalt(4, function(err, result) {
+    //if Error
+    if (err) {
+      return console.log('error: ' + err);
+    }
+    return console.log('salted result is:' + result);
+  });
+  
+  // var hash = bcrypt.hashSync(password, salt);
+  // //check in DB for salted hash
+  
+
+  
+});
+
+
+app.post('/signup',
+function(req, res) {
+  //retrieve username and password
+    //call DB
+      //store username
+    //salt + password
+      //hash salted password
+        //save to DB
+    //
+});
 
 
 
