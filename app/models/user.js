@@ -30,6 +30,7 @@ var User = db.Model.extend({
       if (err) {
         callback(err);
       }
+      console.log('what is result in USER model ', result);
       callback(null, result);
     });
   }

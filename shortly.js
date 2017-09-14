@@ -5,7 +5,6 @@ var partials = require('express-partials');
 var bodyParser = require('body-parser');
 var bcrypt = require('bcrypt-nodejs');
 
-
 var db = require('./app/config');
 var Users = require('./app/collections/users');
 var User = require('./app/models/user');
@@ -15,6 +14,20 @@ var Click = require('./app/models/click');
 
 var app = express();
 
+var sess = {
+  resave: false,
+  saveUninitialized: false,
+  secret: 'more cowbell',
+  cookie: {
+    maxAge: 60000
+  }
+};
+
+if (app.get('env') === 'production') {
+  app.set('trust proxy', 1);
+  sess.cookie.secure = true;
+}
+
 app.set('views', __dirname + '/views');
 app.set('view engine', 'ejs');
 app.use(partials());
@@ -23,6 +36,8 @@ app.use(bodyParser.json());
 // Parse forms (signup/login)
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/public'));
+
+app.use(session(sess));
 
 app.get('/', 
 function(req, res) {
@@ -47,7 +62,7 @@ function(req, res) {
 
   if (!util.isValidUrl(uri)) {
     console.log('Not a valid url: ', uri);
-    return res.sendStatus(404);
+    res.sendStatus(404);
   }
 
   new Link({ url: uri }).fetch().then(function(found) {
@@ -57,7 +72,7 @@ function(req, res) {
       util.getUrlTitle(uri, function(err, title) {
         if (err) {
           console.log('Error reading URL heading: ', err);
-          return res.sendStatus(404);
+          res.sendStatus(404);
         }
 
         Links.create({
@@ -95,7 +110,15 @@ function(req, res) {
   res.render('signup');
 });
 
-app.post('/login', 
+const checkUser = (req, res, next) => {
+  // check req.session
+  // if session expired
+    // redirect login
+  // else
+    // next();
+};
+
+app.post('/login',
 function(req, res) {
   var username = req.body.username;
   var password = req.body.password;
@@ -103,7 +126,29 @@ function(req, res) {
   console.log('username entered: ', username);
   console.log('password entered: ', password);
 
-  // new User({ username: username })
+  new User( { username: username } ).fetch()
+    .then(function(found) {
+      if (found) {
+        console.log('im in then.');
+        var passwordChk = db.knex('users').where('username', username).select('password');
+
+        this.comparePassword(password, found.attributes.password, function(err, result) {
+          if (err) {
+            console.log('what is the problem', err);
+            res.status(403).send('Incorrect password');
+          }
+          // console.log('what is result', result);
+          
+          res.status(201).send('password is valid');
+          // res.redirect('/links');
+        });
+      }
+    })
+    .catch(function(err) {
+      console.log('error ', err);
+      console.log('username not found');
+    });
+
   //if username is NOT in db
     //cannot log in, user doesnt exist
   //else
@@ -125,7 +170,7 @@ function(req, res) {
   var username = req.body.username;
   var password = req.body.password;
   
-  new User({username: username}).fetch()
+  new User( { username: username } ).fetch()
     .then(function(found) {
       if (found) {
         console.log('found');
@@ -145,7 +190,7 @@ function(req, res) {
           .then(function(newUser) {
             console.log('user stored: ' + JSON.stringify(newUser));
             res.status(201).send(newUser);
-            // res.redirect('/');
+            // res.status(201).redirect('/');
           });
         });
       }

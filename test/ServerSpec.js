@@ -106,9 +106,10 @@ describe('', function() {
           'url': 'definitely not a valid url'
         }
       };
-
+      
       requestWithSession(options, function(error, res, body) {
         // res comes from the request module, and may not follow express conventions
+        console.log('res status code ', res.statusCode);
         expect(res.statusCode).to.equal(404);
         done();
       });
