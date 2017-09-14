@@ -86,9 +86,9 @@ function(req, res) {
 app.get('/logout',
 function(req, res) {
   //todo
-  req.session.destroy(function() {
-    res.redirect('/');
-  });
+  // req.session.destroy(function() {
+  //   res.redirect('/');
+  // });
 });
 
 app.get('/signup',
@@ -104,30 +104,24 @@ function(req, res) {
   console.log('username entered: ', username);
   console.log('password entered: ', password);
 
-  // check if user exists
-    // check password is valid to that user
-      // if not valid user to password redirect to restricted
-      // else redirect back to index
-
-  // query(users.name === username && users.pass === password)
-  var salt = bcrypt.genSalt(4, function(err, result) {
-    //if Error
-    if (err) {
-      return console.log('error: ' + err);
-    }
-    return console.log('salted result is:' + result);
-  });
-  
-  // var hash = bcrypt.hashSync(password, salt);
-  // //check in DB for salted hash
-  
-
-  
 });
 
 
 app.post('/signup',
 function(req, res) {
+  var username = req.body.username;
+  var password = req.body.password;
+  
+  new User({username: username}).fetch()
+    .then(function(found) {
+      if (found) {
+        console.log('found');
+        res.redirect('/signup');
+      } else {
+        console.log('else statement');
+
+      }
+    });
   //retrieve username and password
     //call DB
       //store username
