@@ -23,6 +23,15 @@ var User = db.Model.extend({
       }
       callback(null, hash);
     });
+  },
+
+  comparePassword: function(password, hash, callback) {
+    bcrypt.compare(password, hash, function(err, result) {
+      if (err) {
+        callback(err);
+      }
+      callback(null, result);
+    });
   }
 });
 

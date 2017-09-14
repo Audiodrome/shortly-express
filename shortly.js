@@ -24,7 +24,6 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/public'));
 
-
 app.get('/', 
 function(req, res) {
   res.render('index');
@@ -104,8 +103,22 @@ function(req, res) {
   console.log('username entered: ', username);
   console.log('password entered: ', password);
 
-});
+  // new User({ username: username })
+  //if username is NOT in db
+    //cannot log in, user doesnt exist
+  //else
+    //log in
+     //check hashed password in database (look up)
+     //if error
+       //incorrect password
+    //else
+      // logged in 
+      //   redirect to user's links 
+      //     query links table
+      //     display collection (user's links)
+   
 
+});
 
 app.post('/signup',
 function(req, res) {
@@ -118,20 +131,26 @@ function(req, res) {
         console.log('found');
         res.redirect('/signup');
       } else {
-        console.log('else statement');
+        //create the new user in DB
+        this.hashPassword(password, function(err, result) {
+          if (err) {
+            console.log('user hash password error: ' + err);
+            return res.sendStatus(404);
+          }
 
+          Users.create({
+            username: username, 
+            password: result 
+          })
+          .then(function(newUser) {
+            console.log('user stored: ' + JSON.stringify(newUser));
+            res.status(201).send(newUser);
+            // res.redirect('/');
+          });
+        });
       }
     });
-  //retrieve username and password
-    //call DB
-      //store username
-    //salt + password
-      //hash salted password
-        //save to DB
-    //
 });
-
-
 
 /************************************************************/
 // Handle the wildcard route last - if all other routes fail
