@@ -16,10 +16,10 @@ var app = express();
 
 var sess = {
   resave: false,
-  saveUninitialized: false,
+  saveUninitialized: true,
   secret: 'more cowbell',
   cookie: {
-    maxAge: 60000
+    maxAge: 2000
   }
 };
 
@@ -39,30 +39,49 @@ app.use(express.static(__dirname + '/public'));
 
 app.use(session(sess));
 
-app.get('/', 
+const isLoggedIn = (req) => {
+  return req.session ? !!req.session.user : false;
+};
+
+const assignSession = (req, res, newUser) => {
+  return req.session.regenerate(function() {
+    req.session.user = newUser;
+    res.redirect('/');
+  });
+};
+
+const checkUser = (req, res, next) => {
+  if (!isLoggedIn(req)) {
+    res.redirect('/login');
+  } else {
+    next();
+  }
+};
+
+app.get('/', checkUser, 
 function(req, res) {
   res.render('index');
 });
 
-app.get('/create', 
+app.get('/create', checkUser, 
 function(req, res) {
   res.render('index');
 });
 
-app.get('/links', 
+app.get('/links', checkUser, 
 function(req, res) {
   Links.reset().fetch().then(function(links) {
     res.status(200).send(links.models);
   });
 });
 
-app.post('/links', 
+app.post('/links', checkUser, 
 function(req, res) {
   var uri = req.body.url;
 
   if (!util.isValidUrl(uri)) {
     console.log('Not a valid url: ', uri);
-    res.sendStatus(404);
+    return res.sendStatus(404);
   }
 
   new Link({ url: uri }).fetch().then(function(found) {
@@ -72,7 +91,7 @@ function(req, res) {
       util.getUrlTitle(uri, function(err, title) {
         if (err) {
           console.log('Error reading URL heading: ', err);
-          res.sendStatus(404);
+          return res.sendStatus(404);
         }
 
         Links.create({
@@ -99,10 +118,9 @@ function(req, res) {
 
 app.get('/logout',
 function(req, res) {
-  //todo
-  // req.session.destroy(function() {
-  //   res.redirect('/');
-  // });
+  req.session.destroy(function() {
+    res.redirect('/login');
+  });
 });
 
 app.get('/signup',
@@ -110,58 +128,33 @@ function(req, res) {
   res.render('signup');
 });
 
-const checkUser = (req, res, next) => {
-  // check req.session
-  // if session expired
-    // redirect login
-  // else
-    // next();
-};
-
 app.post('/login',
 function(req, res) {
   var username = req.body.username;
   var password = req.body.password;
 
-  console.log('username entered: ', username);
-  console.log('password entered: ', password);
-
   new User( { username: username } ).fetch()
-    .then(function(found) {
-      if (found) {
-        console.log('im in then.');
-        var passwordChk = db.knex('users').where('username', username).select('password');
-
-        this.comparePassword(password, found.attributes.password, function(err, result) {
-          if (err) {
-            console.log('what is the problem', err);
-            res.status(403).send('Incorrect password');
-          }
-          // console.log('what is result', result);
-          
-          res.status(201).send('password is valid');
-          // res.redirect('/links');
-        });
+    .then(function(user) {
+      if (user) {
+        if (password === user.attributes.password) {
+          assignSession(req, res, user);
+        } else {
+          res.redirect(403, '/login');
+        }
+        // this.comparePassword(password, user.attributes.password, function(err, result) {
+        //   if (err) {
+        //     return res.status(403).send('Incorrect password');
+        //   }
+        //   if (result) {
+        //     return res.redirect(201, '/');
+        //   } else {
+        //     return res.redirect(403, '/login');
+        //   }
+        // });
+      } else {
+        res.redirect('/login');
       }
     })
-    .catch(function(err) {
-      console.log('error ', err);
-      console.log('username not found');
-    });
-
-  //if username is NOT in db
-    //cannot log in, user doesnt exist
-  //else
-    //log in
-     //check hashed password in database (look up)
-     //if error
-       //incorrect password
-    //else
-      // logged in 
-      //   redirect to user's links 
-      //     query links table
-      //     display collection (user's links)
-   
 
 });
 
@@ -174,7 +167,7 @@ function(req, res) {
     .then(function(found) {
       if (found) {
         console.log('found');
-        res.redirect('/signup');
+        return res.redirect(200, '/signup');
       } else {
         //create the new user in DB
         this.hashPassword(password, function(err, result) {
@@ -188,9 +181,9 @@ function(req, res) {
             password: result 
           })
           .then(function(newUser) {
-            console.log('user stored: ' + JSON.stringify(newUser));
-            res.status(201).send(newUser);
-            // res.status(201).redirect('/');
+            // console.log('user stored: ' + JSON.stringify(newUser));
+            // res.status(201).send(newUser);
+            assignSession(req, res, newUser);
           });
         });
       }
