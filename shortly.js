@@ -136,25 +136,25 @@ function(req, res) {
   new User( { username: username } ).fetch()
     .then(function(user) {
       if (user) {
-        if (password === user.attributes.password) {
-          assignSession(req, res, user);
-        } else {
-          res.redirect(403, '/login');
-        }
-        // this.comparePassword(password, user.attributes.password, function(err, result) {
-        //   if (err) {
-        //     return res.status(403).send('Incorrect password');
-        //   }
-        //   if (result) {
-        //     return res.redirect(201, '/');
-        //   } else {
-        //     return res.redirect(403, '/login');
-        //   }
-        // });
+        // if (password === user.attributes.password) {
+        //   assignSession(req, res, user);
+        // } else {
+        //   res.redirect(403, '/login');
+        // }
+        this.comparePassword(password, user.attributes.password, function(err, result) {
+          if (err) {
+            return res.status(403).send('Incorrect password');
+          }
+          if (result) {
+            return res.redirect(201, '/');
+          } else {
+            return res.redirect(403, '/login');
+          }
+        });
       } else {
         res.redirect('/login');
       }
-    })
+    });
 
 });
 
